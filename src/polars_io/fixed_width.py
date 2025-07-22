@@ -8,7 +8,7 @@ from beartype.door import is_bearable
 from beartype import beartype
 
 from polars.io.plugins import register_io_source
-from polars_io.common import DEFAULT_BATCH_SIZE, make_eager
+from polars_io.common import DEFAULT_BATCH_SIZE, _make_eager
 
 # ways to specify column locations
 NameStartEnd = Mapping[str, tuple[int, int]]
@@ -18,7 +18,7 @@ ColLocations = NameStartEnd | NameLength
 
 
 @beartype
-def standardize_col_locaions(locs: ColLocations) -> NameStartEnd:
+def _standardize_col_locaions(locs: ColLocations) -> NameStartEnd:
     if is_bearable(locs, NameStartEnd):
         return locs
 
@@ -32,7 +32,7 @@ def standardize_col_locaions(locs: ColLocations) -> NameStartEnd:
         return {name: loc for name, loc in zip(names, locations) if name is not None}
 
 
-def extract_columns(
+def _extract_columns(
     df: pl.DataFrame,
     col_locations: NameStartEnd,
     *,
@@ -53,25 +53,39 @@ def extract_columns(
 
 
 def scan_fwf(
-    source: str | Path,
+    file: str | Path,
     cols: ColLocations,
-    infer_schema_length=100,
+    infer_schema_length: int = 100,
     **kwargs,
 ) -> pl.LazyFrame:
-    col_locations = standardize_col_locaions(cols)
+    """
+    Lazily read from a fixed width file.
+
+    Parameters
+    ----------
+    file
+        The file to read.
+
+    cols
+        The locations of the relevant columns in the fixed-width file. Either a mapping from column names to `(start, end)` paris or a sequence of `(name, width)` pairs.
+
+    kwargs
+        Other kwargs to pass to [`pl.read_csv_batched`](https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv_batched.html).
+    """
+    col_locations = _standardize_col_locaions(cols)
 
     # HACK:
     # write a small number of rows to csv and then reread to infer schema
     # hacky, but works...
     schema = pl.read_csv(
         pl.read_csv(
-            source,
+            file,
             n_rows=infer_schema_length,
             new_columns=["raw"],
             has_header=False,
             separator="\n",  # read each row as one field
         )
-        .pipe(extract_columns, col_locations)
+        .pipe(_extract_columns, col_locations)
         .write_csv()
         .encode()
     ).schema
@@ -82,12 +96,8 @@ def scan_fwf(
         n_rows: int | None,
         batch_size: int | None,
     ) -> Iterator[pl.DataFrame]:
-        """
-        Inner function that yields chunks
-        """
-
         reader = pl.read_csv_batched(
-            source,
+            file,
             has_header=False,
             new_columns=["raw"],
             separator="\n",  # read each row as one field
@@ -99,7 +109,7 @@ def scan_fwf(
         while chunks := reader.next_batches(100):
             yield from (
                 chunk.pipe(
-                    extract_columns,
+                    _extract_columns,
                     col_locations,
                     predicate=predicate,
                     col_subset=with_columns,
@@ -113,4 +123,4 @@ def scan_fwf(
     return register_io_source(io_source=source_generator, schema=schema)
 
 
-read_fwf = make_eager(scan_fwf)
+read_fwf = _make_eager(scan_fwf)

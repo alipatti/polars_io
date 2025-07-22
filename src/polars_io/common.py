@@ -23,7 +23,7 @@ def _get_schema(metadata) -> dict:
     return {v: TYPE_MAPPING[t] for v, t in metadata.readstat_variable_types.items()}
 
 
-def scan_with_pyreadstat(
+def _scan_with_pyreadstat(
     file: str | Path,
     reading_function: Callable,  # e.g. pyreadstat.read_dta
     *,
@@ -46,10 +46,6 @@ def scan_with_pyreadstat(
         n_rows: int | None,
         batch_size: int | None,
     ) -> Iterator[pl.DataFrame]:
-        """
-        Inner function that yields chunks
-        """
-
         reader = pyreadstat.read_file_in_chunks(
             reading_function,
             file,
@@ -67,12 +63,12 @@ def scan_with_pyreadstat(
     return register_io_source(io_source=source_generator, schema=schema)
 
 
-def make_eager[**P](
+def _make_eager[**P](
     lazy_function: Callable[P, pl.LazyFrame],
 ) -> Callable[P, pl.DataFrame]:
     def f(*args: P.args, **kwargs: P.kwargs) -> pl.DataFrame:
         return lazy_function(*args, **kwargs).collect()
 
-    f.__doc__ = lazy_function.__doc__
+    f.__doc__ = f"""See `{__package__}.{lazy_function.__name__}`"""
 
     return f
