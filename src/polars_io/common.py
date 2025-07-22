@@ -6,7 +6,7 @@ from polars.io.plugins import register_io_source
 import pyreadstat
 
 MULTIPROCESSING_CELL_CUTOFF = 10_000_000
-DEFAULT_BATCH_SIZE = 100_000
+DEFAULT_BATCH_SIZE = 50_000
 
 
 TYPE_MAPPING = {
