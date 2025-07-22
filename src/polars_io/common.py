@@ -22,7 +22,7 @@ def _get_schema(metadata) -> dict:
     return {v: TYPE_MAPPING[t] for v, t in metadata.readstat_variable_types.items()}
 
 
-def scan(
+def scan_with_pyreadstat(
     file: str | Path,
     reading_function: Callable,  # e.g. pyreadstat.read_dta
     *,

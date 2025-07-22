@@ -4,7 +4,7 @@ from pathlib import Path
 import polars as pl
 import pyreadstat
 
-from polars_io.common import scan, make_eager
+from polars_io.common import scan_with_pyreadstat, make_eager
 
 
 def scan_stata(
@@ -25,7 +25,7 @@ def scan_stata(
     Other kwargs to pass to [`pyreadstat.read_dta`](https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html#pyreadstat.pyreadstat.read_dta)
     """
 
-    return scan(
+    return scan_with_pyreadstat(
         file=file,
         reading_function=pyreadstat.read_dta,
         n_threads=n_threads,
