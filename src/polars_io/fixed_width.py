@@ -58,8 +58,11 @@ def scan_fwf(
     **kwargs,
 ) -> pl.LazyFrame:
     col_locations = standardize_col_locaions(cols)
-
-    schema = (
+    
+    # HACK: 
+    # write a small number of rows to csv and then reread to infer schema
+    # hacky, but works...
+    schema = pl.read_csv(
         pl.read_csv(
             source,
             n_rows=infer_schema_length,
@@ -68,8 +71,9 @@ def scan_fwf(
             separator="\n",  # read each row as one field
         )
         .pipe(extract_columns, col_locations)
-        .schema
-    )
+        .write_csv()
+        .encode()
+    ).schema
 
     def source_generator(
         with_columns: list[str] | None,
@@ -98,6 +102,7 @@ def scan_fwf(
                     col_locations,
                     predicate=predicate,
                     col_subset=with_columns,
+                    schema=schema,
                 )
                 for chunk in chunks
             )
