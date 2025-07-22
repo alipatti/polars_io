@@ -22,7 +22,7 @@ def _get_schema(metadata) -> dict:
     return {v: TYPE_MAPPING[t] for v, t in metadata.readstat_variable_types.items()}
 
 
-def _scan(
+def scan(
     file: str | Path,
     reading_function: Callable,  # e.g. pyreadstat.read_dta
     *,
@@ -66,7 +66,7 @@ def _scan(
     return register_io_source(io_source=source_generator, schema=schema)
 
 
-def _make_eager[**P](
+def make_eager[**P](
     lazy_function: Callable[P, pl.LazyFrame],
 ) -> Callable[P, pl.DataFrame]:
     def f(*args: P.args, **kwargs: P.kwargs) -> pl.DataFrame:
