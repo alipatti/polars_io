@@ -1,4 +1,5 @@
-from typing import Callable, Iterator, Optional
+from typing import Optional
+from collections.abc import Iterator, Callable
 from pathlib import Path
 
 import polars as pl

@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import Iterator, Mapping, Optional, Sequence
-from itertools import pairwise, accumulate
+from typing import Optional
+from collections.abc import Iterator, Mapping, Sequence
+from itertools import accumulate
 
 import polars as pl
 from beartype.door import is_bearable
@@ -58,8 +59,8 @@ def scan_fwf(
     **kwargs,
 ) -> pl.LazyFrame:
     col_locations = standardize_col_locaions(cols)
-    
-    # HACK: 
+
+    # HACK:
     # write a small number of rows to csv and then reread to infer schema
     # hacky, but works...
     schema = pl.read_csv(
