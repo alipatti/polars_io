@@ -11,3 +11,6 @@ wheels/
 
 # test data
 /data
+
+# this fucking thing
+.DS_Store
