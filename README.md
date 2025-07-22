@@ -39,7 +39,7 @@ pio.scan_fwf("populations.txt", col_locations)
 pio.read_dta("mortality_rates.dta")
 ```
 
-See the documentation for more info.
+See [the documentation](https://alipatti.com/polars_io) for more info.
 
 ## Details
 
