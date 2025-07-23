@@ -32,7 +32,7 @@ def _scan_with_pyreadstat(
 ) -> pl.LazyFrame:
     file = str(file)
 
-    _, metadata = reading_function(file, metadataonly=True)
+    _, metadata = reading_function(file, row_limit = 1)
     schema = _get_schema(metadata)
 
     if len(schema) * metadata.number_rows > MULTIPROCESSING_CELL_CUTOFF:
