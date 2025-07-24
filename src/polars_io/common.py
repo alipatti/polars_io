@@ -1,10 +1,17 @@
-from typing import Optional
+from pprint import pprint
+from typing import Optional, TYPE_CHECKING
 from collections.abc import Iterator, Callable
 from pathlib import Path
+from itertools import count, repeat
 
 import polars as pl
 from polars.io.plugins import register_io_source
 import pyreadstat
+import pyarrow as pa
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import numpy as np
 
 MULTIPROCESSING_CELL_CUTOFF = 10_000_000
 DEFAULT_BATCH_SIZE = 50_000
@@ -29,13 +36,19 @@ def _scan_with_pyreadstat(
     reading_function: Callable,  # e.g. pyreadstat.read_dta
     *,
     n_threads: Optional[int] = None,
+    verbose: bool = False,
     **kwargs,
 ) -> pl.LazyFrame:
     file = str(file)
-    print(file)
 
-    _, metadata = reading_function(file, row_limit = 1)
+    if verbose:
+        print(f"Getting metadata for {file}")
+
+    _, metadata = reading_function(file, row_limit=1)
     schema = _get_schema(metadata)
+
+    if verbose:
+        pprint(schema)
 
     if len(schema) * metadata.number_rows > MULTIPROCESSING_CELL_CUTOFF:
         # TODO: implement multiprocessing
@@ -48,33 +61,53 @@ def _scan_with_pyreadstat(
         n_rows: int | None,
         batch_size: int | None,
     ) -> Iterator[pl.DataFrame]:
-        print(f"{with_columns=}\n{predicate=}\n{n_rows=}\n{batch_size=}")
+        batch_size = batch_size or DEFAULT_BATCH_SIZE
 
-        reader = pyreadstat.read_file_in_chunks(
-            reading_function,
-            file,
-            chunksize=batch_size or DEFAULT_BATCH_SIZE,
-            limit=n_rows,
-            usecols=with_columns,
-            **kwargs,
-        )
+        if verbose:
+            print(f"{with_columns=}, {predicate=}, {n_rows=}, {batch_size=}")
 
-        for i, (df, _) in enumerate(reader):
-            # PERF: read as dict of numpy arrays to avoid round-trip to pandas
-            # - read as dict of numpy arrays
-            # - cast numpy arrays to pyarrow (zero-copy allegedly)
-            #   https://github.com/apache/arrow/issues/31290
-            # - create pyarrow table (zero-copy)
-            #   table = pa.from
-            #   https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table
-            # - create polars df (zero-copy)
-            #   df = pl.from_arrow(table)
-            df = pl.from_pandas(df)
-            print(i, df.shape, df.schema)
+        for row_offset in count(start=0, step=batch_size):
+            if n_rows and row_offset > n_rows:
+                if verbose:
+                    print(f"Gathered sufficient rows. {n_rows=}, {row_offset=}")
+
+                return
+
+            this_batch_size = (
+                min(batch_size, n_rows - row_offset) if n_rows else batch_size
+            )
+
+            if verbose:
+                print(f"{row_offset=}, {this_batch_size=}")
+
+            cols, _ = reading_function(
+                file,
+                row_offset=row_offset,
+                row_limit=this_batch_size,
+                usecols=with_columns,  # read only requested columns
+                output_format="dict",
+                **kwargs,
+            )
+
+            # cast numpy arrays to pyarrow (allegedly zero-copy for supported types)
+            # https://github.com/apache/arrow/issues/31290
+            arrow_table = pa.Table.from_arrays(
+                arrays=[pa.array(arr) for arr in cols.values()],
+                names=list(cols.keys()),
+            )
+
+            # create polars df (zero copy from pyarrow table)
+            df: pl.DataFrame = pl.from_arrow(arrow_table)  # type: ignore
 
             yield df if predicate is None else df.filter(predicate)
 
-    return register_io_source(io_source=source_generator, schema=schema)
+            if df.height < batch_size:
+                if verbose:
+                    print("Reached end of file.")
+
+                return
+
+    return register_io_source(io_source=source_generator, schema=schema).fill_nan(None)
 
 
 def _make_eager[**P](
