@@ -14,6 +14,7 @@ TYPE_MAPPING = {
     "double": pl.Float64,
     "string": pl.String,
     "int8": pl.Int8,
+    "int16": pl.Int8,
     "int32": pl.Int32,
     "float": pl.Float32,
 }
@@ -31,6 +32,7 @@ def _scan_with_pyreadstat(
     **kwargs,
 ) -> pl.LazyFrame:
     file = str(file)
+    print(file)
 
     _, metadata = reading_function(file, row_limit = 1)
     schema = _get_schema(metadata)
@@ -46,6 +48,8 @@ def _scan_with_pyreadstat(
         n_rows: int | None,
         batch_size: int | None,
     ) -> Iterator[pl.DataFrame]:
+        print(f"{with_columns=}\n{predicate=}\n{n_rows=}\n{batch_size=}")
+
         reader = pyreadstat.read_file_in_chunks(
             reading_function,
             file,
@@ -55,8 +59,18 @@ def _scan_with_pyreadstat(
             **kwargs,
         )
 
-        for df, meta in reader:
+        for i, (df, _) in enumerate(reader):
+            # PERF: read as dict of numpy arrays to avoid round-trip to pandas
+            # - read as dict of numpy arrays
+            # - cast numpy arrays to pyarrow (zero-copy allegedly)
+            #   https://github.com/apache/arrow/issues/31290
+            # - create pyarrow table (zero-copy)
+            #   table = pa.from
+            #   https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table
+            # - create polars df (zero-copy)
+            #   df = pl.from_arrow(table)
             df = pl.from_pandas(df)
+            print(i, df.shape, df.schema)
 
             yield df if predicate is None else df.filter(predicate)
 

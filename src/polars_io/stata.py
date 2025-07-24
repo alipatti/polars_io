@@ -6,7 +6,7 @@ import pyreadstat
 from polars_io.common import _scan_with_pyreadstat, _make_eager
 
 
-def scan_stata(
+def scan_dta(
     file: str | Path,
     *,
     n_threads: int | None = None,
@@ -35,4 +35,4 @@ def scan_stata(
     )
 
 
-read_stata = _make_eager(scan_stata)
+read_dta = _make_eager(scan_dta)
