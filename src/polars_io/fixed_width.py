@@ -19,7 +19,7 @@ ColLocations = NameStartEnd | NameLength
 
 @beartype
 @no_type_check
-def _standardize_col_locaions(locs: ColLocations) -> NameStartEnd:
+def _standardize_col_locations(locs: ColLocations) -> NameStartEnd:
     if is_bearable(locs, NameStartEnd):
         return locs
 
@@ -73,7 +73,7 @@ def scan_fwf(
     kwargs
         Other kwargs to pass to [`pl.read_csv_batched`](https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv_batched.html).
     """
-    col_locations = _standardize_col_locaions(cols)
+    col_locations = _standardize_col_locations(cols)
 
     read_csv_kwargs = dict(
         new_columns=["raw"],
