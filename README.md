@@ -1,7 +1,8 @@
 # polars_io
 
-Lazily read Stata (`.dta`), SAS (`.sas7bdat`, `.xpt`), and fixed-width (`.txt`,
-`.dat`, etc.) files in [`polars`](https://pola.rs).
+Lazily read Stata (`.dta`), SAS (`.sas7bdat`, `.xpt`), fixed-width (`.txt`,
+`.dat`, etc.), and newline delimited (`.txt.`) files in
+[`polars`](https://pola.rs).
 
 ## Installation
 

@@ -10,6 +10,7 @@ from pathlib import Path
 import polars as pl
 
 from polars_io.fixed_width import read_fwf, scan_fwf
+from polars_io.lines import read_lines, scan_lines
 from polars_io.sas import read_sas7bdat, read_xpt, scan_sas7bdat, scan_xpt
 from polars_io.stata import read_dta, scan_dta
 
@@ -66,8 +67,10 @@ __all__ = [
     "scan_sas7bdat",
     "scan_xpt",
     "scan_fwf",
+    "scan_lines",
     "read_dta",
     "read_sas7bdat",
     "read_xpt",
     "read_fwf",
+    "read_lines"
 ]

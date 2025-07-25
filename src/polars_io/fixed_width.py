@@ -9,6 +9,7 @@ from beartype.door import is_bearable
 from polars.io.plugins import register_io_source
 
 from polars_io.common import DEFAULT_BATCH_SIZE, _make_eager
+from polars_io.lines import SCAN_LINE_KWARGS
 
 # ways to specify column locations
 NameStartEnd = Mapping[str, tuple[int, int]]
@@ -75,22 +76,17 @@ def scan_fwf(
     """
     col_locations = _standardize_col_locations(cols)
 
-    read_csv_kwargs = dict(
-        new_columns=["raw"],
-        has_header=False,
-        separator="\n",  # read each row as one field
-        quote_char=None,
-        comment_prefix=None,
-    )
+    read_csv_kwargs = SCAN_LINE_KWARGS | kwargs | dict(new_columns=["raw"])
 
     # HACK:
     # write a small number of rows to csv and then reread to infer schema
     # hacky, but works...
+    # see: https://github.com/pola-rs/polars/issues/2043
     schema = pl.read_csv(
         pl.read_csv(
             file,
             n_rows=infer_schema_length,
-            **read_csv_kwargs, # type: ignore
+            **read_csv_kwargs,  # type: ignore
         )
         .pipe(_extract_columns, col_locations)
         .write_csv()
@@ -107,8 +103,7 @@ def scan_fwf(
             file,
             batch_size=batch_size or DEFAULT_BATCH_SIZE,
             n_rows=n_rows,
-            **read_csv_kwargs,
-            **kwargs,
+            **read_csv_kwargs,  # type: ignore
         )
 
         while chunks := reader.next_batches(100):
@@ -122,8 +117,6 @@ def scan_fwf(
                 )
                 for chunk in chunks
             )
-
-        chunks = ...  # TODO:
 
     return register_io_source(io_source=source_generator, schema=schema)
 
