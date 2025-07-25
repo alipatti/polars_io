@@ -55,7 +55,7 @@ than reading the data into `pandas` and then calling `pl.from_pandas`
 ## Contributing
 
 PRs adding support for reading other formats are very welcome! (E.g. `.Rdata`,
-Stata `.dct`, etc.)
+Stata `.dct`, SPSS files, etc.)
 
 ## Issues
 
