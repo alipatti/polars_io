@@ -3,11 +3,13 @@ from collections.abc import Callable
 
 import polars as pl
 from polars.testing import assert_frame_equal
+import pytest
 
 
 DATA = Path("./data")
 
 
+@pytest.mark.timeout(5)
 def run_lazy_test(
     file: Path,
     scanning_function: Callable[[Path], pl.LazyFrame],
@@ -16,7 +18,7 @@ def run_lazy_test(
 
     print(df.collect_schema())
 
-    df.head().collect()
+    print(df.head().collect())
 
 
 def run_eager_test(

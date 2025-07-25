@@ -12,13 +12,23 @@ import polars_io as pio
 from tests import DATA
 
 
-EAGER_DATA_URLS = {
-    "dta": "https://principlesofeconometrics.com/stata.htm",
-    "sas7bdat": "https://www.alanelliott.com/sased2/ED2_FILES.html",
+MANY_FILES_PER_PAGE = {
+    "dta": [
+        # stata included files
+        "https://principlesofeconometrics.com/stata.htm",
+        # oi credit
+        "https://opportunityinsights.org/data/?geographic_level=0&topic=0&paper_id=5359#resource-listing",
+    ],
+    "sas7bdat": [
+        "https://www.alanelliott.com/sased2/ED2_FILES.html",
+    ],
+    "xpt": [
+        "https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Laboratory&Cycle=2021-2023",
+    ],
 }
 
 
-LAZY_DATA_URLS = {
+SINGLE_COMPRESSED_FILE = {
     "sas7bdat": [
         "https://gss.norc.org/Documents/sas/GSS_sas.zip",
     ],
@@ -27,7 +37,6 @@ LAZY_DATA_URLS = {
     ],
     "xpt": [
         "https://www.cdc.gov/brfss/annual_data/2023/files/LLCP2023XPT.zip",
-        "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BMX_L.xpt",
     ],
 }
 
@@ -37,8 +46,30 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
     test_name = metafunc.function.__name__
     suffix = test_name.split("_")[-1]
 
-    if "eager" in test_name and suffix in EAGER_DATA_URLS:
-        generate_eager_tests(metafunc)
+    if "eager" in test_name and suffix in MANY_FILES_PER_PAGE:
+        generate_test_cases(metafunc, high_bytes=10e6)
+
+    if "lazy" in test_name and suffix in SINGLE_COMPRESSED_FILE:
+        generate_test_cases(metafunc, low_bytes=10e6, high_bytes=10e9)
+
+
+def generate_test_cases(
+    metafunc: pytest.Metafunc,
+    *,
+    low_bytes=-float("inf"),
+    high_bytes=float("inf"),
+):
+    suffix = metafunc.function.__name__.split("_")[-1]
+
+    path = get_data_for_filetype(suffix)
+
+    files = [
+        file
+        for file in path.glob(f"*.{suffix}")
+        if file.stat().st_size > low_bytes and file.stat().st_size < high_bytes
+    ]
+
+    metafunc.parametrize("file", files)
 
 
 def decompress_if_needed(url: str, content: bytes) -> tuple[str, bytes]:
@@ -47,6 +78,7 @@ def decompress_if_needed(url: str, content: bytes) -> tuple[str, bytes]:
 
     with zipfile.ZipFile(BytesIO(content)) as zf:
         # get first file that we can read
+        print([f.filename.lower().strip() for f in zf.filelist])
         name = next(
             f.filename
             for f in zf.filelist
@@ -55,7 +87,7 @@ def decompress_if_needed(url: str, content: bytes) -> tuple[str, bytes]:
         return Path(name).parts[-1], zf.read(name)
 
 
-def download_single_file(*, url: str, save_to: Path):
+def download_and_decompress_single_file(*, url: str, save_to: Path):
     print(f"Downloading {url}")
 
     with requests.get(url) as r:
@@ -63,7 +95,7 @@ def download_single_file(*, url: str, save_to: Path):
         print(f"Saving {name} to {save_to}")
 
     save_to.mkdir(exist_ok=True, parents=True)
-    (save_to / name).write_bytes(file)
+    (save_to / name.lower().strip()).write_bytes(file)
 
 
 def download_every_linked_file_with_suffix(*, url: str, save_to: Path, suffix: str):
@@ -78,36 +110,20 @@ def download_every_linked_file_with_suffix(*, url: str, save_to: Path, suffix: s
 
     save_to.mkdir(parents=True, exist_ok=True)
 
-    for f in tqdm(files_to_download, desc="Getting SAS test files"):
+    for f in tqdm(files_to_download, desc=f"Getting {suffix} test files"):
         with requests.get(f) as r:
             (save_to / f.rsplit("/", 1)[-1]).write_bytes(r.content)
 
 
-def generate_eager_tests(metafunc: pytest.Metafunc):
-    suffix = metafunc.function.__name__.split("_")[-1]
-    path = DATA / "eager" / suffix
+def get_data_for_filetype(suffix: str):
+    path = DATA / suffix
 
     if not path.exists():
-        url = EAGER_DATA_URLS[suffix]
+        for url in MANY_FILES_PER_PAGE[suffix]:
+            print(f"Getting {suffix} files from {url}")
+            download_every_linked_file_with_suffix(url=url, save_to=path, suffix=suffix)
 
-        print(f"Getting {suffix} files from {url}")
+        for url in SINGLE_COMPRESSED_FILE[suffix]:
+            download_and_decompress_single_file(url=url, save_to=path)
 
-        download_every_linked_file_with_suffix(
-            url=url, save_to=DATA / suffix, suffix=suffix
-        )
-
-    metafunc.parametrize(
-        "file",
-        path.glob(f"*.{suffix}"),
-    )
-
-
-def generate_lazy_tests(metafunc: pytest.Metafunc):
-    suffix = metafunc.function.__name__.split("_")[-1]
-    path = DATA / "lazy" / suffix
-
-    if not path.exists():
-        print(f"Getting large {suffix} files")
-
-        for url in LAZY_DATA_URLS[suffix]:
-            download_single_file(url=url, save_to=DATA / "lazy" / suffix)
+    return path
