@@ -3,7 +3,7 @@ from pathlib import Path
 import polars as pl
 import pyreadstat
 
-from polars_io.common import _scan_with_pyreadstat, _make_eager
+from polars_io.common import _make_eager, _scan_with_pyreadstat
 
 
 def scan_dta(

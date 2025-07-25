@@ -1,16 +1,14 @@
-from pathlib import Path
 import zipfile
 from io import BytesIO
+from pathlib import Path
 
+import lxml.html
 import pytest
 import requests
-import lxml.html
 from tqdm import tqdm
 
 import polars_io as pio
-
 from tests import DATA
-
 
 MANY_FILES_PER_PAGE = {
     "dta": [

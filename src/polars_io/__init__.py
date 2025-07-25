@@ -3,16 +3,15 @@
    :start-line: 1
 """  # noqa
 
+import importlib.metadata
 from collections.abc import Callable
 from pathlib import Path
-import importlib.metadata
 
 import polars as pl
 
-from polars_io.stata import scan_dta, read_dta
-from polars_io.sas import scan_sas7bdat, read_sas7bdat, scan_xpt, read_xpt
-from polars_io.fixed_width import scan_fwf, read_fwf
-
+from polars_io.fixed_width import read_fwf, scan_fwf
+from polars_io.sas import read_sas7bdat, read_xpt, scan_sas7bdat, scan_xpt
+from polars_io.stata import read_dta, scan_dta
 
 __version__ = importlib.metadata.version("polars_io")
 

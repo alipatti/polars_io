@@ -1,13 +1,13 @@
-from pathlib import Path
-from typing import Optional, no_type_check
 from collections.abc import Iterator, Mapping, Sequence
 from itertools import accumulate
+from pathlib import Path
+from typing import Optional, no_type_check
 
 import polars as pl
-from beartype.door import is_bearable
 from beartype import beartype
-
+from beartype.door import is_bearable
 from polars.io.plugins import register_io_source
+
 from polars_io.common import DEFAULT_BATCH_SIZE, _make_eager
 
 # ways to specify column locations

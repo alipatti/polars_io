@@ -32,7 +32,7 @@ dev = [
 ]
 
 [tool.ruff.lint]
-select = ["D"]
+select = ["D", "I"]
 ignore = ["D100"] # missing module docstring
 
 pydocstyle.convention = "numpy"

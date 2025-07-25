@@ -1,17 +1,17 @@
-from pprint import pprint
-from typing import Optional, TYPE_CHECKING
-from collections.abc import Iterator, Callable
-from pathlib import Path
+from collections.abc import Callable, Iterator
 from itertools import count, repeat
+from pathlib import Path
+from pprint import pprint
+from typing import TYPE_CHECKING, Optional
 
 import polars as pl
-from polars.io.plugins import register_io_source
-import pyreadstat
 import pyarrow as pa
+import pyreadstat
+from polars.io.plugins import register_io_source
 
 if TYPE_CHECKING:
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
 MULTIPROCESSING_CELL_CUTOFF = 10_000_000
 DEFAULT_BATCH_SIZE = 50_000

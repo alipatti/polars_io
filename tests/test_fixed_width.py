@@ -1,9 +1,9 @@
-from pathlib import Path
 import gzip
+from pathlib import Path
 
-import requests
 import pandas as pd
 import polars as pl
+import requests
 from polars.testing import assert_frame_equal
 
 import polars_io

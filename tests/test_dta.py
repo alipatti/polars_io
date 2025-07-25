@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 import polars as pl
-import polars_io as pio
 
+import polars_io as pio
 from tests import run_eager_test, run_lazy_test
 
 

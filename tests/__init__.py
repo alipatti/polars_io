@@ -1,10 +1,9 @@
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 
 import polars as pl
-from polars.testing import assert_frame_equal
 import pytest
-
+from polars.testing import assert_frame_equal
 
 DATA = Path("./data")
 
