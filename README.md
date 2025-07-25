@@ -15,7 +15,7 @@ import polars as pl
 import polars_io as pio
 
 # lazily load a sas file
-lf = pio.scan_sas("huge_SAS_file.sas7bdat")
+lf = pio.scan_sas7bdat("huge_SAS_file.sas7bdat")
 
 # get its schema
 lf.collect_schema()
