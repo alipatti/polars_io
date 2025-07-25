@@ -75,6 +75,14 @@ def scan_fwf(
     """
     col_locations = _standardize_col_locaions(cols)
 
+    read_csv_kwargs = dict(
+        new_columns=["raw"],
+        has_header=False,
+        separator="\n",  # read each row as one field
+        quote_char=None,
+        comment_prefix=None,
+    )
+
     # HACK:
     # write a small number of rows to csv and then reread to infer schema
     # hacky, but works...
@@ -82,9 +90,7 @@ def scan_fwf(
         pl.read_csv(
             file,
             n_rows=infer_schema_length,
-            new_columns=["raw"],
-            has_header=False,
-            separator="\n",  # read each row as one field
+            **read_csv_kwargs, # type: ignore
         )
         .pipe(_extract_columns, col_locations)
         .write_csv()
@@ -99,11 +105,9 @@ def scan_fwf(
     ) -> Iterator[pl.DataFrame]:
         reader = pl.read_csv_batched(
             file,
-            has_header=False,
-            new_columns=["raw"],
-            separator="\n",  # read each row as one field
             batch_size=batch_size or DEFAULT_BATCH_SIZE,
             n_rows=n_rows,
+            **read_csv_kwargs,
             **kwargs,
         )
 
