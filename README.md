@@ -1,6 +1,7 @@
 # polars_io
 
-Lazily read Stata (`.dta`), SAS (`.sas7bdat`, `.xpt`), and fixed-width (`.txt`, `.dat`, etc.) files in [`polars`](https://pola.rs).
+Lazily read Stata (`.dta`), SAS (`.sas7bdat`, `.xpt`), and fixed-width (`.txt`,
+`.dat`, etc.) files in [`polars`](https://pola.rs).
 
 ## Installation
 
@@ -43,14 +44,21 @@ See [the documentation](https://alipatti.com/polars_io) for more info.
 
 ## Details
 
-The Stata and SAS implementations make use the [`readstat`](https://github.com/WizardMac/ReadStat) C library via the python bindings provided by [`pyreadstat`](https://github.com/Roche/pyreadstat). This is the same implementation used by the `R` library [`haven`](https://github.com/tidyverse/haven).
-
-The package makes use of zero-copy conversions from `numpy -> pyarrow -> polars` and should be faster and have lower memory overhead than reading the data into `pandas` and then calling `pl.from_pandas` (benchmarks welcome).
+The Stata and SAS implementations make use the
+[`readstat`](https://github.com/WizardMac/ReadStat) C library via the python
+bindings provided by [`pyreadstat`](https://github.com/Roche/pyreadstat). For
+numeric types, reading uses zero-copy conversions from
+`numpy -> pyarrow -> polars` and should be faster and have lower memory overhead
+than reading the data into `pandas` and then calling `pl.from_pandas`
+(benchmarks welcome).
 
 ## Contributing
 
-PRs adding support for reading other formats are very welcome! (E.g. `.Rdata`, Stata `.dct`, etc.)
+PRs adding support for reading other formats are very welcome! (E.g. `.Rdata`,
+Stata `.dct`, etc.)
 
 ## Issues
 
-This packages fails to some read files with non-utf8 metadata (e.g. column labels, notes on `.dta` files). This is a known issue with upstream packages that is being worked on (see Roche/pyreadstat#298 and WizardMac/ReadStat#344).
+This packages fails to some read files with non-utf8 metadata (e.g. column
+labels, notes on `.dta` files). This is a known issue with upstream packages
+that is being worked on (see Roche/pyreadstat#298 and WizardMac/ReadStat#344).
