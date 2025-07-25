@@ -57,6 +57,7 @@ def _extract_columns(
 def scan_fwf(
     file: str | Path,
     cols: ColLocations,
+    infer_schema: bool = True,
     infer_schema_length: int = 100,
     **kwargs,
 ) -> pl.LazyFrame:
@@ -78,20 +79,23 @@ def scan_fwf(
 
     read_csv_kwargs = SCAN_LINE_KWARGS | kwargs | dict(new_columns=["raw"])
 
-    # HACK:
-    # write a small number of rows to csv and then reread to infer schema
-    # hacky, but works...
-    # see: https://github.com/pola-rs/polars/issues/2043
-    schema = pl.read_csv(
-        pl.read_csv(
-            file,
-            n_rows=infer_schema_length,
-            **read_csv_kwargs,  # type: ignore
-        )
-        .pipe(_extract_columns, col_locations)
-        .write_csv()
-        .encode()
-    ).schema
+    if infer_schema:
+        # HACK:
+        # write a small number of rows to csv and then reread to infer schema
+        # hacky, but it works and there doesn't seem to be a better way
+        # see: https://github.com/pola-rs/polars/issues/2043
+        schema = pl.read_csv(
+            pl.read_csv(
+                file,
+                n_rows=infer_schema_length,
+                **read_csv_kwargs,  # type: ignore
+            )
+            .pipe(_extract_columns, col_locations)
+            .write_csv()
+            .encode()
+        ).schema
+    else:
+        schema = pl.Schema({col: pl.String for col in col_locations})
 
     def source_generator(
         with_columns: list[str] | None,
