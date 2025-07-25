@@ -1,17 +1,12 @@
 from collections.abc import Callable, Iterator
-from itertools import count, repeat
+from itertools import count
 from pathlib import Path
 from pprint import pprint
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, ParamSpec
 
 import polars as pl
 import pyarrow as pa
-import pyreadstat
 from polars.io.plugins import register_io_source
-
-if TYPE_CHECKING:
-    import numpy as np
-    import pandas as pd
 
 MULTIPROCESSING_CELL_CUTOFF = 10_000_000
 DEFAULT_BATCH_SIZE = 50_000
@@ -25,6 +20,8 @@ TYPE_MAPPING = {
     "int32": pl.Int32,
     "float": pl.Float32,
 }
+
+P = ParamSpec("P")
 
 
 def _get_schema(metadata) -> dict:
@@ -110,7 +107,7 @@ def _scan_with_pyreadstat(
     return register_io_source(io_source=source_generator, schema=schema).fill_nan(None)
 
 
-def _make_eager[**P](
+def _make_eager(
     lazy_function: Callable[P, pl.LazyFrame],
 ) -> Callable[P, pl.DataFrame]:
     def f(*args: P.args, **kwargs: P.kwargs) -> pl.DataFrame:
