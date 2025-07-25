@@ -5,12 +5,16 @@
 
 from collections.abc import Callable
 from pathlib import Path
+import importlib.metadata
 
 import polars as pl
 
 from polars_io.stata import scan_dta, read_dta
 from polars_io.sas import scan_sas7bdat, read_sas7bdat, scan_xpt, read_xpt
 from polars_io.fixed_width import scan_fwf, read_fwf
+
+
+__version__ = importlib.metadata.version("polars_io")
 
 
 _OUR_SUFFIXES = {
