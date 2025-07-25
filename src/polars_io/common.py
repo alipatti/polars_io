@@ -116,6 +116,6 @@ def _make_eager[**P](
     def f(*args: P.args, **kwargs: P.kwargs) -> pl.DataFrame:
         return lazy_function(*args, **kwargs).collect()
 
-    f.__doc__ = f"""See `{__package__}.{lazy_function.__name__}`"""
+    f.__doc__ = f"""See `{__package__}.{getattr(lazy_function, "__name__")}`"""
 
     return f

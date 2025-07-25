@@ -26,7 +26,9 @@ dev = [
     "pyarrow>=21.0.0",
     "pytest>=8.4.1",
     "requests>=2.32.4",
+    "ruff>=0.12.5",
     "tqdm>=4.67.1",
+    "ty>=0.0.1a16",
 ]
 
 [tool.ruff.lint]

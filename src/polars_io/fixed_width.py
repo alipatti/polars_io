@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, no_type_check
 from collections.abc import Iterator, Mapping, Sequence
 from itertools import accumulate
 
@@ -18,6 +18,7 @@ ColLocations = NameStartEnd | NameLength
 
 
 @beartype
+@no_type_check
 def _standardize_col_locaions(locs: ColLocations) -> NameStartEnd:
     if is_bearable(locs, NameStartEnd):
         return locs
