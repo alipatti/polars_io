@@ -16,7 +16,7 @@ from polars_io.fixed_width import scan_fwf, read_fwf
 _OUR_SUFFIXES = {
     ".dta": scan_dta,
     ".sas7bdat": scan_sas7bdat,
-    # ".xpt": scan_xpt,
+    ".xpt": scan_xpt,
 }
 
 _POLARS_SUFFIXES = {
