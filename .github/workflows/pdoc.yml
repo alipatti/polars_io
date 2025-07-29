@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   docs:
-    needs: build
     runs-on: ubuntu-latest
 
     permissions:
