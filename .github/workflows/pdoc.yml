@@ -27,10 +27,13 @@ jobs:
       - uses: astral-sh/setup-uv@v6
 
       - name: Build docs
-        run: uv run pdoc -o docs/ src/* 
+        run: |
+          git clone https://github.com/nxtlo/syn/ # get theme
+          uv run pdoc -o docs/ -t syn/rust/ src/* # build docs with theme
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/
+
       - id: deployment
         uses: actions/deploy-pages@v4
