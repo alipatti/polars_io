@@ -29,7 +29,7 @@ def scan_sas7bdat(
         A sas7bcat file from which to take categorical labels.
 
     kwargs
-        Other kwargs to pass to [`pyreadstat.read_sas7bdat`](https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html#pyreadstat.pyreadstat.read_sas7bcat)
+        Other kwargs to pass to [`pyreadstat.read_sas7bdat`](https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html#pyreadstat.pyreadstat.read_sas7bdat)
     """
     return _scan_with_pyreadstat(
         file=file,
