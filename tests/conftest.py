@@ -18,7 +18,8 @@ MANY_FILES_PER_PAGE = {
         "https://opportunityinsights.org/data/?geographic_level=0&topic=0&paper_id=5359#resource-listing",
     ],
     "sas7bdat": [
-        "https://www.alanelliott.com/sased2/ED2_FILES.html",
+        # "https://www.alanelliott.com/sased2/ED2_FILES.html", # FIX: this fails on github actions
+        "https://www.principlesofeconometrics.com/sas.htm",
     ],
     "xpt": [
         "https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Laboratory&Cycle=2021-2023",
