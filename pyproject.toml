@@ -1,6 +1,6 @@
 [project]
 name = "polars-io"
-version = "0.3.0"
+version = "0.4.0"
 description = "Lazy and eager reading of Stata and SAS files into Polars"
 readme = "README.md"
 authors = [
