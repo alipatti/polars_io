@@ -1,6 +1,6 @@
 [project]
 name = "polars-io"
-version = "0.4.2"
+version = "0.4.3"
 description = "Lazy and eager reading of Stata and SAS files into Polars"
 readme = "README.md"
 authors = [
@@ -10,6 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "beartype>=0.21.0",
     "polars>=1.31.0",
+    "pyarrow>=21.0.0",
     "pyreadstat>=1.3.0",
 ]
 
