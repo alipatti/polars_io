@@ -17,9 +17,9 @@ def run_lazy_test(
     try:
         df = scanning_function(file)
 
-        print(df.collect_schema())
+        _ = df.collect_schema()
 
-        print(df.head().collect())
+        _ = df.head().collect()
 
     except UnicodeDecodeError as e:
         pytest.xfail(f"known unicode issue: {e}")

@@ -1,4 +1,5 @@
-from collections.abc import Callable, Iterator
+from collections import defaultdict
+from collections.abc import Callable, Iterator, Mapping
 from itertools import count
 from pathlib import Path
 from pprint import pprint
@@ -6,13 +7,14 @@ from typing import Optional, ParamSpec
 
 import polars as pl
 import pyarrow as pa
+from polars import selectors as cs
 from polars.io.plugins import register_io_source
 
 MULTIPROCESSING_CELL_CUTOFF = 10_000_000
 DEFAULT_BATCH_SIZE = 50_000
 
 
-TYPE_MAPPING = {
+PYREADSTAT_TYPE_MAPPING = {
     "double": pl.Float64,
     "string": pl.String,
     "int8": pl.Int8,
@@ -21,11 +23,21 @@ TYPE_MAPPING = {
     "float": pl.Float32,
 }
 
+
+# sas and stat measure dates from 1960 for some reason
+EPOCH_OFFSET = pl.date(1970, 1, 1) - pl.date(1960, 1, 1)
+
+SPECIAL_TYPE_FIXES: Mapping[type[pl.DataType], Callable[[pl.Expr], pl.Expr]] = {
+    # SAS date/times (https://documentation.sas.com/doc/en/lrcon/9.4/p1wj0wt2ebe2a0n1lv4lem9hdc0v.htm
+    # seconds since 1960
+    pl.Datetime: lambda c: pl.from_epoch(c, time_unit="s") - EPOCH_OFFSET,
+    # days since 1960
+    pl.Date: lambda c: pl.from_epoch(c, time_unit="d") - EPOCH_OFFSET,
+    # seconds since midnight
+    pl.Time: lambda c: pl.from_epoch(c, time_unit="s").cast(pl.Time),
+}
+
 P = ParamSpec("P")
-
-
-def _get_schema(metadata) -> dict:
-    return {v: TYPE_MAPPING[t] for v, t in metadata.readstat_variable_types.items()}
 
 
 def _scan_with_pyreadstat(
@@ -83,6 +95,7 @@ def _scan_with_pyreadstat(
                 row_limit=this_batch_size,
                 usecols=with_columns,  # read only requested columns
                 output_format="dict",
+                disable_datetime_conversion=True,  # read dates as floats
                 **kwargs,
             )
 
@@ -96,7 +109,18 @@ def _scan_with_pyreadstat(
             # create polars df (zero copy from pyarrow table)
             df: pl.DataFrame = pl.from_arrow(arrow_table)  # type: ignore
 
-            yield df if predicate is None else df.filter(predicate)
+            # create mapping from dtype to list of cols
+            type_to_cols = _invert_mapping(schema)
+            yield (
+                df.filter(*() if predicate is None else (predicate,))
+                # fix special types
+                .with_columns(
+                    cs.by_name(type_to_cols[date_type], require_all=False)
+                    .fill_nan(None)
+                    .pipe(f)
+                    for date_type, f in SPECIAL_TYPE_FIXES.items()
+                )
+            )
 
             if df.height < batch_size:
                 if verbose:
@@ -105,6 +129,21 @@ def _scan_with_pyreadstat(
                 return
 
     return register_io_source(io_source=source_generator, schema=schema).fill_nan(None)
+
+
+def _get_schema(metadata) -> dict:
+    pyreadstat_schema = {
+        v: PYREADSTAT_TYPE_MAPPING[t]
+        for v, t in metadata.readstat_variable_types.items()
+    }
+
+    schema_overrides = {
+        v: polars_type
+        for v, sas_or_stata_type in metadata.original_variable_types.items()
+        if sas_or_stata_type and (polars_type := _determine_type(sas_or_stata_type))
+    }
+
+    return pyreadstat_schema | schema_overrides
 
 
 def _make_eager(
@@ -116,3 +155,79 @@ def _make_eager(
     f.__doc__ = f"""See `{__package__}.{getattr(lazy_function, "__name__")}`"""
 
     return f
+
+
+def _invert_mapping(mapping: Mapping) -> Mapping:
+    d = defaultdict(list)
+
+    for k, v in mapping.items():
+        d[v].append(k)
+
+    if None in d:
+        del d[None]
+
+    return d
+
+
+def _determine_type(sas_type: str) -> type[pl.DataType] | None:
+    if "8601" in sas_type:
+        return pl.Date
+
+    for dtype, labels in SAS_DATE_TYPES.items():
+        for label in labels:
+            if sas_type.upper().startswith(label):
+                return dtype
+
+
+SAS_DATE_TYPES = {
+    pl.Datetime: ["DATETIME", "DTWKDATX"],
+    pl.Time: ["HHMM", "HOUR", "MMSS", "TIME", "TOD"],
+    pl.Date: [
+        "YYMM",
+        "YYMMP",
+        "YYQD",
+        "YYQN",
+        "YYQRN",
+        "YYMON",
+        "YYQRD",
+        "WEEKDAY",
+        "YYQ",
+        "YYQP",
+        "YYQC",
+        "DATE",
+        "DDMMYY",
+        "WEEKDATE",
+        "QTRR",
+        "WORDDATE",
+        "YYQRS",
+        "YYMMS",
+        "YYQR",
+        "MMYY",
+        "WORDDATX",
+        "WEEKDATX",
+        "MMDDYY",
+        "MMYYN",
+        "MONYY",
+        "MMYYC",
+        "YYMMDD",
+        "YYQRP",
+        "YYQS",
+        "JULIAN",
+        "MMYYS",
+        "MONTH",
+        "NENGO",
+        "MONNAME",
+        "YEAR",
+        "QTR",
+        "DOWNAME",
+        "DAY",
+        "YYMMC",
+        "YYMMN",
+        "YYMMD",
+        "JULDAY",
+        "MMYYD",
+        "WEEKV",
+        "MMYYP",
+        "YYQRC",
+    ],
+}

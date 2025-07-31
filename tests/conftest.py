@@ -30,6 +30,7 @@ MANY_FILES_PER_PAGE = {
 SINGLE_COMPRESSED_FILE = {
     "sas7bdat": [
         "https://gss.norc.org/Documents/sas/GSS_sas.zip",
+        "https://libguides.library.kent.edu/ld.php?content_id=11205331",
     ],
     "dta": [
         "https://gss.norc.org/documents/stata/GSS_stata.zip",
@@ -71,9 +72,9 @@ def generate_test_cases(
     metafunc.parametrize("file", files)
 
 
-def decompress_if_needed(url: str, content: bytes) -> tuple[str, bytes]:
+def decompress_if_needed(url: str, content: bytes, suffix: str) -> tuple[str, bytes]:
     if not url.endswith(".zip"):
-        return (url.rsplit("/", 1)[-1], content)
+        return (url.rsplit("/", 1)[-1] + "." + suffix, content)
 
     with zipfile.ZipFile(BytesIO(content)) as zf:
         # get first file that we can read
@@ -86,11 +87,11 @@ def decompress_if_needed(url: str, content: bytes) -> tuple[str, bytes]:
         return Path(name).parts[-1], zf.read(name)
 
 
-def download_and_decompress_single_file(*, url: str, save_to: Path):
+def download_and_decompress_single_file(*, url: str, save_to: Path, suffix: str):
     print(f"Downloading {url}")
 
     with requests.get(url) as r:
-        name, file = decompress_if_needed(url, r.content)
+        name, file = decompress_if_needed(url, r.content, suffix)
         print(f"Saving {name} to {save_to}")
 
     save_to.mkdir(exist_ok=True, parents=True)
@@ -123,6 +124,6 @@ def get_data_for_filetype(suffix: str):
             download_every_linked_file_with_suffix(url=url, save_to=path, suffix=suffix)
 
         for url in SINGLE_COMPRESSED_FILE[suffix]:
-            download_and_decompress_single_file(url=url, save_to=path)
+            download_and_decompress_single_file(url=url, save_to=path, suffix=suffix)
 
     return path
