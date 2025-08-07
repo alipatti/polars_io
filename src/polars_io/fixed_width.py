@@ -75,6 +75,12 @@ def scan_fwf(
     kwargs
         Other kwargs to pass to [`pl.read_csv_batched`](https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv_batched.html).
     """
+    if "batch_size" in kwargs:
+        raise KeyError(
+            "Batch size is controlled by Polars. "
+            "See https://docs.pola.rs/api/python/stable/reference/api/polars.Config.set_streaming_chunk_size.html"
+        )
+
     col_locations = _standardize_col_locations(cols)
 
     read_csv_kwargs = SCAN_LINE_KWARGS | kwargs | dict(new_columns=["raw"])
@@ -87,8 +93,7 @@ def scan_fwf(
         schema = pl.read_csv(
             pl.read_csv(
                 file,
-                n_rows=infer_schema_length,
-                **read_csv_kwargs,  # type: ignore
+                **read_csv_kwargs | dict(n_rows=infer_schema_length),  # type: ignore
             )
             .pipe(_extract_columns, col_locations)
             .write_csv()
@@ -103,11 +108,18 @@ def scan_fwf(
         n_rows: int | None,
         batch_size: int | None,
     ) -> Iterator[pl.DataFrame]:
+        n_rows = min(
+            (x for x in (n_rows, kwargs.get("n_rows")) if x is not None),
+            default=None,
+        )
+
         reader = pl.read_csv_batched(
             file,
-            batch_size=batch_size or DEFAULT_BATCH_SIZE,
-            n_rows=n_rows,
-            **read_csv_kwargs,  # type: ignore
+            **read_csv_kwargs  # type: ignore
+            | dict(
+                batch_size=batch_size or DEFAULT_BATCH_SIZE,
+                n_rows=n_rows,
+            ),
         )
 
         while chunks := reader.next_batches(100):

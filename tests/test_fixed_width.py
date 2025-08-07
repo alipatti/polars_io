@@ -38,3 +38,8 @@ def test_fwf(data=Path("./data/fwf/seer.txt")):
     pandas.columns = list(COL_LENGTHS.keys())
 
     assert_frame_equal(ours, pandas)
+
+    assert_frame_equal(
+        polars_io.read_fwf(data, COL_LENGTHS, n_rows=1000),
+        polars_io.read_fwf(data, COL_LENGTHS).head(1000),
+    )
