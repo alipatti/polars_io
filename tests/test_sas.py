@@ -1,10 +1,10 @@
 from pathlib import Path
 
-import pyreadstat
 import polars as pl
+import pyreadstat
 
-from tests import run_eager_test, run_lazy_test
 import polars_io as pio
+from tests import run_eager_test, run_lazy_test
 
 
 def test_eager_sas7bdat(file: Path):
